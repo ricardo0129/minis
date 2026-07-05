@@ -11,3 +11,4 @@ sha2 = "*"
 hmac = "*"
 hex-literal = "*"
 hex = "*"
+tracing-subscriber = { version = "*", features = ["env-filter"] }
