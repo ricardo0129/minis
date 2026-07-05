@@ -1,3 +1,5 @@
+use axum::Json;
+use axum::RequestExt;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::http::header::HeaderMap;
@@ -78,6 +80,7 @@ async fn event_sub(req: Request) -> Result<impl IntoResponse, (StatusCode, Strin
             return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
         }
     };
+    println!("body: {}", &body);
     let message = message_id + &message_timestamp + body;
     let mac = hmac(secret, &message);
     let s = hex::decode(&message_signature[SIGNATURE_PREFIX_LENGTH..])
@@ -100,18 +103,27 @@ impl MessageType {
     }
 }
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ChallengeBody {
+    challenge: String,
+}
+
 async fn challenge(req: Request) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!("{:?}", req);
     let message_type = req.headers()[MESSAGE_TYPE]
         .to_str()
         .expect("Missing message type");
     match message_type {
         val if val == MessageType::Verification.as_str() => {
-            println!("good");
+            let Json(payload): Json<ChallengeBody> =
+                req.extract().await.expect("Unable to parse Verification");
+            return Ok(payload.challenge);
         }
         _ => {
             println!("unknown type");
+            return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
         }
     }
-
-    Ok("Success")
 }
