@@ -1,18 +1,63 @@
-use axum::Json;
-use axum::RequestExt;
 use axum::extract::Request;
+use axum::http::HeaderValue;
 use axum::http::StatusCode;
 use axum::http::header::HeaderMap;
 use axum::response::IntoResponse;
+use axum::{Json, RequestExt};
 use axum::{Router, routing};
 use hmac::{Hmac, KeyInit, Mac};
 use http_body_util::BodyExt;
+use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const TWITCH_MESSAGE_ID: &str = "twitch-eventsub-message-id";
 const TWITCH_MESSAGE_TIMESTAMP: &str = "twitch-eventsub-message-timestamp";
 const TWITCH_MESSAGE_SIGNATURE: &str = "twitch-eventsub-message-signature";
+const TWITCH_MESSAGE_TYPE: &str = "twitch-eventsub-message-type";
+
+pub struct AppState {
+    twitch_secret: String,
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        Self {
+            twitch_secret: std::env::var("TWITCH_SECRET").expect("Missing TWITCH SECRET"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Message {
+    content: String,
+}
+
+const DISCORD_API: &str = "https://discord.com/api/v10";
+
+async fn post_message(content: &str) {
+    let channel_id = std::env::var("CHANNEL_ID").unwrap();
+
+    let url = format!("{DISCORD_API}/channels/{channel_id}/messages");
+    let discord_token = std::env::var("DISCORD_TOKEN").expect("missing");
+
+    let client = reqwest::Client::new();
+    let request = client
+        .post(url)
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bot {}", discord_token))
+        .json(&Message {
+            content: content.to_string(),
+        })
+        .build()
+        .expect("failed to send");
+    let res = reqwest::Client::execute(&client, request)
+        .await
+        .expect("bad request");
+    println!("{:?}", res);
+    println!("Status: {}", res.status());
+    println!("Body: {}", res.text().await.expect("bad"));
+}
 
 #[tokio::main]
 async fn main() {
@@ -25,9 +70,7 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let app = Router::new()
-        .route("/eventsub", routing::post(event_sub))
-        .route("/challenge", routing::post(challenge));
+    let app = Router::new().route("/eventsub", routing::post(event_sub));
 
     // run it
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -43,28 +86,53 @@ fn hmac(secret: &str, message: &str) -> Hmac<Sha256> {
     mac
 }
 
-fn parse_message_headers(headers: &HeaderMap) -> (String, String, String) {
-    let message_id = headers[TWITCH_MESSAGE_ID]
-        .to_str()
-        .expect("Missing message id");
-    let message_timestamp = headers[TWITCH_MESSAGE_TIMESTAMP]
-        .to_str()
-        .expect("Missing message timestamp");
-    let message_signature = headers[TWITCH_MESSAGE_SIGNATURE]
-        .to_str()
-        .expect("Missing message signature");
-    (
-        message_id.to_string(),
-        message_timestamp.to_string(),
-        message_signature.to_string(),
-    )
+struct MessageHeaders {
+    message_id: String,
+    message_timestamp: String,
+    message_signature: String,
+    message_type: String,
 }
 
-const SIGNATURE_PREFIX_LENGTH: usize = 7;
+fn header_to_string(header: &HeaderValue) -> String {
+    header.to_str().expect("Bad Header").to_string()
+}
+
+impl MessageHeaders {
+    fn from_headers(headers: &HeaderMap) -> Self {
+        Self {
+            message_id: header_to_string(&headers[TWITCH_MESSAGE_ID]),
+            message_timestamp: header_to_string(&headers[TWITCH_MESSAGE_TIMESTAMP]),
+            message_signature: header_to_string(&headers[TWITCH_MESSAGE_SIGNATURE]),
+            message_type: header_to_string(&headers[TWITCH_MESSAGE_TYPE]),
+        }
+    }
+}
+
+const SIGNATURE_PREFIX_LENGTH: usize = "sha256:".len();
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Notification {
+    id: String,
+    broadcaster_user_id: String,
+    broadcaster_user_login: String,
+    broadcaster_user_name: String,
+    #[serde(rename = "type")]
+    notification_type: String,
+    started_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Event {
+    event: Notification,
+}
+
+fn get_secret() -> String {
+    return "hello12345hello".to_string();
+}
 
 async fn event_sub(req: Request) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let secret: &str = "hello12345hello";
-    let (message_id, message_timestamp, message_signature) = parse_message_headers(req.headers());
+    let secret: String = get_secret();
+    let headers: MessageHeaders = MessageHeaders::from_headers(req.headers());
 
     let (_, body) = req.into_parts();
     let bytes = match body.collect().await {
@@ -74,56 +142,59 @@ async fn event_sub(req: Request) -> Result<impl IntoResponse, (StatusCode, Strin
             return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
         }
     };
-    let body = match std::str::from_utf8(&bytes) {
+    let body_str = match std::str::from_utf8(&bytes) {
         Ok(body) => body,
         Err(_) => {
             return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
         }
     };
-    println!("body: {}", &body);
-    let message = message_id + &message_timestamp + body;
-    let mac = hmac(secret, &message);
-    let s = hex::decode(&message_signature[SIGNATURE_PREFIX_LENGTH..])
+    println!("body: {}", &body_str);
+
+    let message = headers.message_id + &headers.message_timestamp + body_str;
+    let mac = hmac(&secret, &message);
+    let s = hex::decode(&headers.message_signature[SIGNATURE_PREFIX_LENGTH..])
         .expect("Signature Decode Failed");
     mac.verify_slice(&s).expect("unable to verify");
-    Ok("success")
+    match headers.message_type {
+        val if val == MessageType::Verification.as_str() => {
+            println!("Verification Message");
+            let Json(payload): Json<ChallengeBody> =
+                Json::from_bytes(&bytes).expect("unable to parse challenge");
+            return Ok(payload.challenge);
+        }
+        val if val == MessageType::Notification.as_str() => {
+            println!("Notification Message");
+            let Json(notification): Json<Event> =
+                Json::from_bytes(&bytes).expect("unable to parse notification");
+            println!("{:?}", &notification.event);
+            post_message(&serde_json::to_string(&notification.event).expect("faiedl to string"))
+                .await;
+        }
+        val if val == MessageType::Revocation.as_str() => {
+            println!("Revocation Message");
+        }
+        _ => return Err((StatusCode::BAD_REQUEST, "Unknown Request Type".to_string())),
+    }
+    Ok("success".to_string())
 }
-
-const MESSAGE_TYPE: &str = "twitch-eventsub-message-type";
 
 enum MessageType {
     Verification,
+    Notification,
+    Revocation,
 }
 
 impl MessageType {
     fn as_str(&self) -> &'static str {
         match self {
             MessageType::Verification => "webhook_callback_verification",
+            MessageType::Notification => "notification",
+            MessageType::Revocation => "revocation",
         }
     }
 }
-
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ChallengeBody {
     challenge: String,
-}
-
-async fn challenge(req: Request) -> Result<impl IntoResponse, (StatusCode, String)> {
-    println!("{:?}", req);
-    let message_type = req.headers()[MESSAGE_TYPE]
-        .to_str()
-        .expect("Missing message type");
-    match message_type {
-        val if val == MessageType::Verification.as_str() => {
-            let Json(payload): Json<ChallengeBody> =
-                req.extract().await.expect("Unable to parse Verification");
-            return Ok(payload.challenge);
-        }
-        _ => {
-            println!("unknown type");
-            return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
-        }
-    }
 }

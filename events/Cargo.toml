@@ -13,3 +13,5 @@ hex-literal = "*"
 hex = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
 serde = { version = "*", features = ["derive"] }
+reqwest = { version = "*", features = ["json"] }
+serde_json = "*"
