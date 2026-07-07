@@ -1,9 +1,9 @@
+use axum::Json;
 use axum::extract::Request;
 use axum::http::HeaderValue;
 use axum::http::StatusCode;
 use axum::http::header::HeaderMap;
 use axum::response::IntoResponse;
-use axum::{Json, RequestExt};
 use axum::{Router, routing};
 use hmac::{Hmac, KeyInit, Mac};
 use http_body_util::BodyExt;
@@ -16,12 +16,14 @@ const TWITCH_MESSAGE_TIMESTAMP: &str = "twitch-eventsub-message-timestamp";
 const TWITCH_MESSAGE_SIGNATURE: &str = "twitch-eventsub-message-signature";
 const TWITCH_MESSAGE_TYPE: &str = "twitch-eventsub-message-type";
 
+#[allow(dead_code)]
 pub struct AppState {
     twitch_secret: String,
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    #[allow(dead_code)]
+    fn new() -> Self {
         Self {
             twitch_secret: std::env::var("TWITCH_SECRET").expect("Missing TWITCH SECRET"),
         }
@@ -128,7 +130,7 @@ struct Event {
 }
 
 fn get_secret() -> String {
-    return "hello12345hello".to_string();
+    "hello12345hello".to_string()
 }
 
 async fn event_sub(req: Request) -> Result<impl IntoResponse, (StatusCode, String)> {
