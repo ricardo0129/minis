@@ -51,7 +51,7 @@ impl MessageHeaders {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Notification {
+pub struct StreamOnline {
     pub id: String,
     pub broadcaster_user_id: String,
     pub broadcaster_user_login: String,
@@ -62,6 +62,6 @@ pub struct Notification {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Event {
-    pub event: Notification,
+pub struct Event<T> {
+    pub event: T,
 }

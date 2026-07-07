@@ -2,12 +2,11 @@ use crate::discord;
 
 const DISCORD_API: &str = "https://discord.com/api/v10";
 
-pub async fn post_message(content: &str) {
+pub async fn post_message(discord_token: &str, content: &str) {
     println!("post message");
     let channel_id = std::env::var("CHANNEL_ID").unwrap();
 
     let url = format!("{DISCORD_API}/channels/{channel_id}/messages");
-    let discord_token = std::env::var("DISCORD_TOKEN").expect("missing");
 
     let client = reqwest::Client::new();
     let request = client
