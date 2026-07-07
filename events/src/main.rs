@@ -25,7 +25,7 @@ impl AppState {
     #[allow(dead_code)]
     fn new() -> Self {
         Self {
-            twitch_secret: std::env::var("TWITCH_SECRET").expect("Missing TWITCH SECRET"),
+            twitch_secret: std::env::var("TWITCH_SECRET").expect("Missing Twitch Secret"),
         }
     }
 }

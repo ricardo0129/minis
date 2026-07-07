@@ -2,13 +2,13 @@ name: Events
 
 on:
   push:
-    paths:
-      - 'events/**'
     branches:
       - main
+    paths:
+      - "events/**"
   pull_request:
     paths:
-      - 'events/**'
+      - "events/**"
 
 env:
   CARGO_TERM_COLOR: always
@@ -18,49 +18,57 @@ defaults:
     working-directory: events
 
 jobs:
-  linting:
-    name: Linting
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          components: clippy
-      - run: cargo clippy --all-features -- --deny=warnings
   formatting:
     name: Formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: rustfmt
-      - name: "fmt"
-        run: cargo fmt --check
-  building:
-    name: Building
-    continue-on-error: ${{ matrix.experimental || false }}
-    strategy:
-      matrix:
-        rust: [stable]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust }}
-      - run: cargo build --all-features
-  testing:
-    name: Testing
+
+      - run: cargo fmt --check
+
+  linting:
+    name: Linting
+    needs: formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v4
         with:
-          toolchain: stable
+          submodules: true
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - run: cargo clippy --all-features -- --deny warnings
+
+  testing:
+    name: Testing
+    needs: linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
       - run: cargo test --all-features
+
+  building:
+    name: Building
+    needs: testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: cargo build --release --all-features
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: events
+          path: events/target/release/events
