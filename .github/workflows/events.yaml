@@ -3,12 +3,12 @@ name: Events
 on:
   push:
     paths:
-      - 'events'
+      - 'events/**'
     branches:
       - main
   pull_request:
     paths:
-      - 'events'
+      - 'events/**'
 
 env:
   CARGO_TERM_COLOR: always
