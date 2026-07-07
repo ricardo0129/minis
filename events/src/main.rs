@@ -36,6 +36,7 @@ struct Message {
 const DISCORD_API: &str = "https://discord.com/api/v10";
 
 async fn post_message(content: &str) {
+    println!("post message");
     let channel_id = std::env::var("CHANNEL_ID").unwrap();
 
     let url = format!("{DISCORD_API}/channels/{channel_id}/messages");
