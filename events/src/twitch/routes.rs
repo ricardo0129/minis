@@ -1,6 +1,6 @@
 use crate::discord;
+use crate::shared::appstate::AppState;
 use crate::twitch;
-use crate::twitch::appstate::AppState;
 use crate::twitch::protocol::StreamOnline;
 use crate::twitch::verifier;
 
@@ -21,7 +21,7 @@ pub async fn event_sub(
     let (_, body) = req.into_parts();
     let bytes = body.collect().await.expect("Body Error").to_bytes();
 
-    if !verifier::verify_twitch_request(&headers, &appstate.twitch_secret, &bytes) {
+    if !verifier::verify_twitch_request(&headers, &appstate.twitch.twitch_secret, &bytes) {
         return Err((
             StatusCode::BAD_REQUEST,
             "Unable to verify source".to_string(),
@@ -42,7 +42,7 @@ pub async fn event_sub(
             debug!("{:?}", &notification.event);
             // Todo Handle Error
             let _ = discord::api::post_message(
-                &appstate.discord_token,
+                &appstate.discord.discord_token,
                 &serde_json::to_string(&notification.event).expect("faiedl to string"),
             )
             .await;

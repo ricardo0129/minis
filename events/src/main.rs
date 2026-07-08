@@ -4,6 +4,7 @@ use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod discord;
+mod shared;
 mod twitch;
 
 #[tokio::main]
@@ -17,11 +18,11 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let twitch_state = twitch::appstate::AppState::new();
+    let app_state = shared::appstate::AppState::new();
     let app = Router::new()
         .route("/eventsub", routing::post(twitch::routes::event_sub))
         .layer(TraceLayer::new_for_http())
-        .with_state(twitch_state);
+        .with_state(app_state);
 
     // run it
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await.unwrap();
