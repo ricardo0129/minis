@@ -1,5 +1,6 @@
 use crate::discord::{self, constants};
 use std::fmt;
+use tracing::debug;
 
 #[derive(Debug)]
 pub enum APIError {
@@ -15,7 +16,6 @@ impl fmt::Display for APIError {
 }
 
 pub async fn post_message(discord_token: &str, content: &str) -> Result<(), APIError> {
-    println!("post message");
     let channel_id = std::env::var("CHANNEL_ID").unwrap();
 
     let url = format!("{}/channels/{channel_id}/messages", constants::DISCORD_API);
@@ -33,8 +33,7 @@ pub async fn post_message(discord_token: &str, content: &str) -> Result<(), APIE
     let res = reqwest::Client::execute(&client, request)
         .await
         .map_err(|_e| APIError::RequestFailed)?;
-    println!("{:?}", res);
-    println!("Status: {}", res.status());
-    println!("Body: {}", res.text().await.expect("bad"));
+    debug!("Status: {}", res.status());
+    debug!("Body: {}", res.text().await.expect("bad"));
     Ok(())
 }

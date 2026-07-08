@@ -9,6 +9,7 @@ use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use http_body_util::BodyExt;
+use tracing::{debug, info};
 
 pub async fn event_sub(
     State(appstate): State<AppState>,
@@ -29,16 +30,16 @@ pub async fn event_sub(
 
     match headers.message_type {
         val if val == twitch::protocol::MessageType::Verification.as_str() => {
-            println!("Verification Message");
+            info!("Verification Message");
             let Json(payload): Json<twitch::protocol::ChallengeBody> =
                 Json::from_bytes(&bytes).expect("unable to parse challenge");
             return Ok(payload.challenge);
         }
         val if val == twitch::protocol::MessageType::Notification.as_str() => {
-            println!("Notification Message");
+            info!("Notification Message");
             let Json(notification): Json<twitch::protocol::Event<StreamOnline>> =
                 Json::from_bytes(&bytes).expect("unable to parse notification");
-            println!("{:?}", &notification.event);
+            debug!("{:?}", &notification.event);
             // Todo Handle Error
             let _ = discord::api::post_message(
                 &appstate.discord_token,
@@ -47,7 +48,7 @@ pub async fn event_sub(
             .await;
         }
         val if val == twitch::protocol::MessageType::Revocation.as_str() => {
-            println!("Revocation Message");
+            info!("Revocation Message");
         }
         _ => return Err((StatusCode::BAD_REQUEST, "Unknown Request Type".to_string())),
     }

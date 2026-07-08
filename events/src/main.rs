@@ -1,4 +1,6 @@
 use axum::{Router, routing};
+use tower_http::trace::TraceLayer;
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod discord;
@@ -18,10 +20,11 @@ async fn main() {
     let twitch_state = twitch::appstate::AppState::new();
     let app = Router::new()
         .route("/eventsub", routing::post(twitch::routes::event_sub))
+        .layer(TraceLayer::new_for_http())
         .with_state(twitch_state);
 
     // run it
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await.unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
+    info!("listening on {}", listener.local_addr().unwrap());
     let _ = axum::serve(listener, app).await;
 }
