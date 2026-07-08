@@ -1,11 +1,7 @@
+use crate::twitch::constants;
 use axum::http::HeaderValue;
 use axum::http::header::HeaderMap;
 use serde::{Deserialize, Serialize};
-
-const TWITCH_MESSAGE_ID: &str = "twitch-eventsub-message-id";
-const TWITCH_MESSAGE_TIMESTAMP: &str = "twitch-eventsub-message-timestamp";
-const TWITCH_MESSAGE_SIGNATURE: &str = "twitch-eventsub-message-signature";
-const TWITCH_MESSAGE_TYPE: &str = "twitch-eventsub-message-type";
 
 pub enum MessageType {
     Verification,
@@ -42,10 +38,10 @@ pub struct MessageHeaders {
 impl MessageHeaders {
     pub fn from_headers(headers: &HeaderMap) -> Self {
         Self {
-            message_id: header_to_string(&headers[TWITCH_MESSAGE_ID]),
-            message_timestamp: header_to_string(&headers[TWITCH_MESSAGE_TIMESTAMP]),
-            message_signature: header_to_string(&headers[TWITCH_MESSAGE_SIGNATURE]),
-            message_type: header_to_string(&headers[TWITCH_MESSAGE_TYPE]),
+            message_id: header_to_string(&headers[constants::TWITCH_MESSAGE_ID]),
+            message_timestamp: header_to_string(&headers[constants::TWITCH_MESSAGE_TIMESTAMP]),
+            message_signature: header_to_string(&headers[constants::TWITCH_MESSAGE_SIGNATURE]),
+            message_type: header_to_string(&headers[constants::TWITCH_MESSAGE_TYPE]),
         }
     }
 }
