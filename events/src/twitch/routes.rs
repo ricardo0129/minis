@@ -43,6 +43,7 @@ pub async fn event_sub(
             // Todo Handle Error
             let _ = discord::api::post_message(
                 &appstate.discord.discord_token,
+                &appstate.discord.channel_id,
                 &serde_json::to_string(&notification.event).expect("faiedl to string"),
             )
             .await;

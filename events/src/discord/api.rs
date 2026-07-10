@@ -15,9 +15,11 @@ impl fmt::Display for APIError {
     }
 }
 
-pub async fn post_message(discord_token: &str, content: &str) -> Result<(), APIError> {
-    let channel_id = std::env::var("CHANNEL_ID").unwrap();
-
+pub async fn post_message(
+    discord_token: &str,
+    channel_id: &str,
+    content: &str,
+) -> Result<(), APIError> {
     let url = format!("{}/channels/{channel_id}/messages", constants::DISCORD_API);
 
     let client = reqwest::Client::new();
