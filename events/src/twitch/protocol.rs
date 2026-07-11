@@ -2,6 +2,7 @@ use crate::twitch::constants;
 use axum::http::HeaderValue;
 use axum::http::header::HeaderMap;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub enum MessageType {
     Verification,
@@ -9,12 +10,14 @@ pub enum MessageType {
     Revocation,
 }
 
-impl MessageType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            MessageType::Verification => "webhook_callback_verification",
-            MessageType::Notification => "notification",
-            MessageType::Revocation => "revocation",
+impl FromStr for MessageType {
+    type Err = ();
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        match input {
+            "webhook_callback_verification" => Ok(MessageType::Verification),
+            "notification" => Ok(MessageType::Notification),
+            "revocation" => Ok(MessageType::Revocation),
+            _ => Err(()),
         }
     }
 }

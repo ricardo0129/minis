@@ -1,6 +1,7 @@
 use crate::discord;
 use crate::shared::appstate::AppState;
 use crate::twitch;
+use crate::twitch::protocol::MessageType;
 use crate::twitch::protocol::StreamOnline;
 use crate::twitch::verifier;
 
@@ -9,6 +10,7 @@ use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use http_body_util::BodyExt;
+use std::str::FromStr;
 use tracing::{debug, info};
 
 pub async fn event_sub(
@@ -28,14 +30,18 @@ pub async fn event_sub(
         ));
     }
 
-    match headers.message_type {
-        val if val == twitch::protocol::MessageType::Verification.as_str() => {
+    let Ok(message_type) = MessageType::from_str(&headers.message_type) else {
+        return Err((StatusCode::BAD_REQUEST, "Invalid Message Type".to_string()));
+    };
+
+    match message_type {
+        MessageType::Verification => {
             info!("Verification Message");
             let Json(payload): Json<twitch::protocol::ChallengeBody> =
                 Json::from_bytes(&bytes).expect("unable to parse challenge");
             return Ok(payload.challenge);
         }
-        val if val == twitch::protocol::MessageType::Notification.as_str() => {
+        MessageType::Notification => {
             info!("Notification Message");
             let Json(notification): Json<twitch::protocol::Event<StreamOnline>> =
                 Json::from_bytes(&bytes).expect("unable to parse notification");
@@ -48,10 +54,9 @@ pub async fn event_sub(
             )
             .await;
         }
-        val if val == twitch::protocol::MessageType::Revocation.as_str() => {
+        MessageType::Revocation => {
             info!("Revocation Message");
         }
-        _ => return Err((StatusCode::BAD_REQUEST, "Unknown Request Type".to_string())),
     }
     Ok("success".to_string())
 }
