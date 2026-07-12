@@ -1,9 +1,9 @@
-use crate::discord;
 use crate::shared::appstate::AppState;
+use crate::shared::event::{EventKind, EventSource, InternalEvent};
 use crate::twitch;
-use crate::twitch::protocol::MessageType;
-use crate::twitch::protocol::StreamOnline;
+use crate::twitch::protocol::{Event, MessageType, StreamOnline};
 use crate::twitch::verifier;
+use std::collections::HashMap;
 
 use axum::Json;
 use axum::extract::{Request, State};
@@ -11,7 +11,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use http_body_util::BodyExt;
 use std::str::FromStr;
-use tracing::{debug, info};
+use tracing::info;
 
 pub async fn event_sub(
     State(appstate): State<AppState>,
@@ -43,16 +43,16 @@ pub async fn event_sub(
         }
         MessageType::Notification => {
             info!("Notification Message");
-            let Json(notification): Json<twitch::protocol::Event<StreamOnline>> =
+            let Json(event_wrapper): Json<Event<StreamOnline>> =
                 Json::from_bytes(&bytes).expect("unable to parse notification");
-            debug!("{:?}", &notification.event);
-            // Todo Handle Error
-            let _ = discord::api::post_message(
-                &appstate.discord.discord_token,
-                &appstate.discord.channel_id,
-                &serde_json::to_string(&notification.event).expect("faiedl to string"),
-            )
-            .await;
+            let event: InternalEvent = InternalEvent {
+                source: EventSource::Twitch,
+                metadata: HashMap::new(),
+                payload: EventKind::TwitchStreamOnline {
+                    event: event_wrapper.event,
+                },
+            };
+            appstate.notifications.route_event(event).await;
         }
         MessageType::Revocation => {
             info!("Revocation Message");

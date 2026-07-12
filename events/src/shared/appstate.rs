@@ -1,17 +1,17 @@
-use crate::discord::state::DiscordService;
+use crate::shared::event_router::NotificationRouter;
 use crate::twitch::state::TwitchService;
 
 #[derive(Clone)]
 pub struct AppState {
     pub twitch: TwitchService,
-    pub discord: DiscordService,
+    pub notifications: NotificationRouter,
 }
 
 impl AppState {
     pub fn new() -> Self {
         Self {
             twitch: TwitchService::new(),
-            discord: DiscordService::new(),
+            notifications: NotificationRouter::new(),
         }
     }
 }

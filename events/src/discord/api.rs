@@ -16,26 +16,23 @@ impl fmt::Display for APIError {
 }
 
 pub async fn post_message(
+    client: &reqwest::Client,
     discord_token: &str,
     channel_id: &str,
     content: &str,
 ) -> Result<(), APIError> {
     let url = format!("{}/channels/{channel_id}/messages", constants::DISCORD_API);
 
-    let client = reqwest::Client::new();
-    let request = client
-        .post(url)
-        .header("Content-Type", "application/json")
+    let res = client
+        .post(&url)
         .header("Authorization", format!("Bot {}", discord_token))
         .json(&discord::models::Message {
             content: content.to_string(),
         })
-        .build()
-        .map_err(|_e| APIError::RequestFailed)?;
-    let res = reqwest::Client::execute(&client, request)
+        .send()
         .await
         .map_err(|_e| APIError::RequestFailed)?;
+
     debug!("Status: {}", res.status());
-    debug!("Body: {}", res.text().await.expect("bad"));
     Ok(())
 }

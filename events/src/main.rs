@@ -1,11 +1,10 @@
-use axum::{Router, routing};
-use tower_http::trace::TraceLayer;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod discord;
 mod shared;
 mod twitch;
+use crate::shared::app::build_app;
 
 #[tokio::main]
 async fn main() {
@@ -18,11 +17,7 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let app_state = shared::appstate::AppState::new();
-    let app = Router::new()
-        .route("/eventsub", routing::post(twitch::routes::event_sub))
-        .layer(TraceLayer::new_for_http())
-        .with_state(app_state);
+    let app = build_app();
 
     // run it
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await.unwrap();
