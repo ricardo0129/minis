@@ -12,10 +12,9 @@ fn hmac(secret: &str, message: &str) -> Hmac<Sha256> {
 pub fn verify_twitch_request(
     headers: &twitch::protocol::MessageHeaders,
     twitch_secret: &str,
-    body: &[u8],
+    body: &str,
 ) -> bool {
-    let body_str: &str = std::str::from_utf8(body).expect("Error Parsing Body");
-    let message = headers.message_id.clone() + &headers.message_timestamp + body_str;
+    let message = headers.message_id.clone() + &headers.message_timestamp + body;
     let mac = hmac(twitch_secret, &message);
     let s = hex::decode(&headers.message_signature[constants::SIGNATURE_PREFIX_LENGTH..])
         .expect("Signature Decode Failed");
