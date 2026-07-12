@@ -5,15 +5,14 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "*" }
-http-body-util = "0.1.0"
+http-body-util = { version = "0.1.0" }
 tokio = { version = "1.0", features = ["full"] }
-sha2 = "*"
-hmac = "*"
-hex-literal = "*"
-hex = "*"
+sha2 = { version = "*" }
+hmac = { version = "*" }
+hex = { version = "*" }
 tracing-subscriber = { version = "*", features = ["env-filter"] }
 serde = { version = "*", features = ["derive"] }
 reqwest = { version = "*", features = ["json"] }
-serde_json = "*"
+serde_json = { version = "*" }
 tower-http = { version = "*", features = ["trace"] }
-tracing = "*"
+tracing = { version = "*" }
