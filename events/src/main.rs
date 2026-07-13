@@ -2,6 +2,7 @@ use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod discord;
+mod kick;
 mod shared;
 mod twitch;
 use crate::shared::app::build_app;
@@ -17,7 +18,7 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let app = build_app();
+    let app = build_app().await;
 
     // run it
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await.unwrap();

@@ -1,6 +1,6 @@
 use crate::discord::state::IntoDiscordNotification;
+use crate::shared::utils::header_to_string;
 use crate::twitch::constants;
-use axum::http::HeaderValue;
 use axum::http::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -26,10 +26,6 @@ impl FromStr for MessageType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChallengeBody {
     pub challenge: String,
-}
-
-fn header_to_string(header: &HeaderValue) -> String {
-    header.to_str().expect("Bad Header").to_string()
 }
 
 pub struct MessageHeaders {
