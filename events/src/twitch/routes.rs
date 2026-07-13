@@ -2,15 +2,13 @@ use crate::shared::appstate::AppState;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
 use crate::shared::event_router::NotificationRouter;
 use crate::twitch;
-use crate::twitch::protocol::MessageHeaders;
-use crate::twitch::protocol::{Event, MessageType, StreamOnline};
+use crate::twitch::protocol::{Event, MessageHeaders, MessageType, StreamOnline};
 use crate::twitch::verifier;
 use std::collections::HashMap;
 
 use axum::Json;
 use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use std::str::FromStr;
 use tracing::info;
