@@ -2,7 +2,7 @@ use crate::kick::constants;
 use crate::shared::utils::header_to_string;
 use axum::http::HeaderMap;
 
-use crate::discord::state::IntoDiscordNotification;
+use crate::shared::notifier::IntoNotification;
 use serde::{Deserialize, Serialize};
 
 pub struct MessageHeaders {
@@ -41,7 +41,7 @@ pub struct Broadcaster {
     pub channel_slug: String,
 }
 
-impl IntoDiscordNotification for StreamUpdate {
+impl IntoNotification for StreamUpdate {
     fn format_notification(&self) -> String {
         let username = &self.broadcaster.username;
         format!("{} Went Live! https://twitch.com/{}", username, username)

@@ -5,7 +5,7 @@ mod discord;
 mod kick;
 mod shared;
 mod twitch;
-use crate::shared::app::build_app;
+use crate::shared::app::build_router;
 
 #[tokio::main]
 async fn main() {
@@ -18,7 +18,8 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let app = build_app().await;
+    let app_state = shared::appstate::AppState::new().await;
+    let app = build_router(app_state);
 
     // run it
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await.unwrap();

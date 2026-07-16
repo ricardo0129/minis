@@ -1,5 +1,6 @@
 use crate::discord::state::DiscordNotifier;
 use crate::shared::event::{EventKind, InternalEvent};
+use crate::shared::notifier::Notifier;
 
 #[derive(Clone)]
 pub struct NotificationRouter {
@@ -17,16 +18,12 @@ impl NotificationRouter {
             EventKind::TwitchStreamOnline {
                 event: stream_online,
             } => {
-                self.discord
-                    .twitch_discord_notification(stream_online)
-                    .await;
+                self.discord.post_notification(stream_online).await;
             }
             EventKind::KickStreamUpdate {
                 event: stream_update,
             } => {
-                self.discord
-                    .twitch_discord_notification(stream_update)
-                    .await;
+                self.discord.post_notification(stream_update).await;
             }
         }
     }

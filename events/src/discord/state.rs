@@ -1,15 +1,12 @@
 use crate::discord;
+use crate::shared::notifier::{IntoNotification, Notifier};
 use reqwest;
 
 #[derive(Clone)]
 pub struct DiscordNotifier {
-    client: reqwest::Client,
-    token: String,
-    channel_id: String,
-}
-
-pub trait IntoDiscordNotification {
-    fn format_notification(&self) -> String;
+    pub client: reqwest::Client,
+    pub token: String,
+    pub channel_id: String,
 }
 
 impl DiscordNotifier {
@@ -20,7 +17,10 @@ impl DiscordNotifier {
             channel_id: std::env::var("CHANNEL_ID").expect("Missing Channel Id"),
         }
     }
-    pub async fn twitch_discord_notification(&self, notification: impl IntoDiscordNotification) {
+}
+
+impl Notifier for DiscordNotifier {
+    async fn post_notification(&self, notification: impl IntoNotification) {
         let _ = discord::api::post_message(
             &self.client,
             &self.token,

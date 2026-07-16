@@ -1,4 +1,4 @@
-use crate::discord::state::IntoDiscordNotification;
+use crate::shared::notifier::IntoNotification;
 use crate::shared::utils::header_to_string;
 use crate::twitch::constants;
 use axum::http::header::HeaderMap;
@@ -57,7 +57,7 @@ pub struct StreamOnline {
     pub started_at: String,
 }
 
-impl IntoDiscordNotification for StreamOnline {
+impl IntoNotification for StreamOnline {
     fn format_notification(&self) -> String {
         format!(
             "{} Went Live! https://twitch.com/{}",
