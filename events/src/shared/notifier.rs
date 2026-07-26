@@ -1,5 +1,7 @@
 pub trait Notifier {
-    async fn post_notification(&self, notification: impl IntoNotification);
+    async fn post_notification<T>(&self, notification: T)
+    where
+        T: IntoNotification;
 }
 
 pub trait IntoNotification {

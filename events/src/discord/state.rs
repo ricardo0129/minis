@@ -20,7 +20,7 @@ impl DiscordNotifier {
 }
 
 impl Notifier for DiscordNotifier {
-    async fn post_notification(&self, notification: impl IntoNotification) {
+    async fn post_notification<T: IntoNotification>(&self, notification: T) {
         let _ = discord::api::post_message(
             &self.client,
             &self.token,
