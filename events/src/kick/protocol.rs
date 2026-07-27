@@ -34,7 +34,7 @@ pub struct StreamUpdate {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Broadcaster {
     pub is_anonymous: bool,
-    pub user_id: String,
+    pub user_id: u64,
     pub username: String,
     pub is_verified: bool,
     pub profile_picture: String,
