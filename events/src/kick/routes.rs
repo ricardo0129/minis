@@ -3,8 +3,7 @@ use crate::shared::appstate::AppState;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
 use axum::Json;
 use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use base64::prelude::*;
 use rsa::RsaPublicKey;
@@ -47,7 +46,7 @@ pub async fn webhook(
             metadata: HashMap::new(),
             payload: EventKind::KickStreamUpdate { event: payload },
         };
-        appstate.events.lock().unwrap().push(internal_event);
+        appstate.sender.send(internal_event).await.unwrap();
     } else {
         return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
     }

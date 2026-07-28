@@ -44,6 +44,6 @@ pub struct Broadcaster {
 impl IntoNotification for StreamUpdate {
     fn format_notification(&self) -> String {
         let username = &self.broadcaster.username;
-        format!("{} Went Live! https://twitch.com/{}", username, username)
+        format!("{} Went Live! https://kick.com/{}", username, username)
     }
 }
