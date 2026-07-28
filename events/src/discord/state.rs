@@ -1,4 +1,5 @@
 use crate::discord;
+use crate::discord::constants;
 use crate::shared::notifier::{IntoNotification, Notifier};
 use reqwest;
 
@@ -21,10 +22,12 @@ impl DiscordNotifier {
 
 impl Notifier for DiscordNotifier {
     async fn post_notification<T: IntoNotification>(&self, notification: T) {
+        let channel_id = &self.channel_id;
+        let url = format!("{}/channels/{channel_id}/messages", constants::DISCORD_API);
         let _ = discord::api::post_message(
+            &url,
             &self.client,
             &self.token,
-            &self.channel_id,
             &notification.format_notification(),
         )
         .await;

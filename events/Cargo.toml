@@ -19,3 +19,6 @@ tower-http = { version = "*", features = ["trace"] }
 tracing = { version = "*" }
 base64 = { version = "*" }
 tower = { version = "0.5.2", features = ["util", "timeout"] }
+
+[dev-dependencies]
+wiremock = { version = "*" }

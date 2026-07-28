@@ -1,4 +1,5 @@
 use crate::kick::api::retrieve_public_key;
+use crate::kick::constants;
 
 #[derive(Clone)]
 pub struct KickService {
@@ -8,7 +9,7 @@ pub struct KickService {
 impl KickService {
     pub async fn new() -> Self {
         Self {
-            public_key: retrieve_public_key().await,
+            public_key: retrieve_public_key(format!("{}/public-key", constants::KICK_API)).await,
         }
     }
 }
