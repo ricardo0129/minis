@@ -6,9 +6,8 @@ mod kick;
 mod shared;
 mod twitch;
 use crate::shared::app::build_router;
-use crate::shared::event::InternalEvent;
 use crate::shared::event_router::NotificationRouter;
-use tokio::time::{Duration, sleep};
+use tokio::sync::mpsc::channel;
 
 #[tokio::main]
 async fn main() {
@@ -21,18 +20,14 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let app_state = shared::appstate::AppState::new().await;
-    let events = app_state.events.clone();
+    let (sender, mut receiver) = channel(100);
+    let app_state = shared::appstate::AppState::new(sender).await;
     tokio::spawn(async move {
         let notification_router = NotificationRouter::new();
         loop {
-            sleep(Duration::from_secs(1)).await;
-            info!("loop running");
-            let process_events: Vec<InternalEvent> = events.lock().unwrap().drain(..).collect();
-            for e in process_events {
-                info!("{:?}", e);
-                notification_router.route_event(e).await;
-            }
+            let event = receiver.recv().await.expect("Unable to read from channel");
+            info!("Processing: {:?}", event);
+            notification_router.route_event(event).await;
         }
     });
     let app = build_router(app_state);

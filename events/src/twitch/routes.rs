@@ -30,7 +30,7 @@ fn handle_verification(body: String) -> Result<String, (StatusCode, String)> {
     Ok(payload.challenge)
 }
 
-fn handle_notification(body: &str, appstate: &mut AppState) {
+async fn handle_notification(body: &str, appstate: &AppState) {
     info!("Notification Message");
     let Json(event_wrapper): Json<Event<StreamOnline>> =
         Json::from_bytes(body.as_bytes()).expect("unable to parse notification");
@@ -41,12 +41,11 @@ fn handle_notification(body: &str, appstate: &mut AppState) {
             event: event_wrapper.event,
         },
     };
-    let event_ref = appstate.events.clone();
-    event_ref.lock().unwrap().push(event);
+    appstate.sender.send(event).await.unwrap();
 }
 
 pub async fn event_sub(
-    State(mut appstate): State<AppState>,
+    State(appstate): State<AppState>,
     headers: HeaderMap,
     body: String,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -68,7 +67,7 @@ pub async fn event_sub(
             return handle_verification(body.clone());
         }
         MessageType::Notification => {
-            handle_notification(&body, &mut appstate);
+            handle_notification(&body, &appstate).await;
         }
         MessageType::Revocation => {
             info!("Revocation Message");
