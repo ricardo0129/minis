@@ -1,12 +1,13 @@
 use crate::kick::state::KickService;
-use crate::shared::event_router::NotificationRouter;
+use crate::shared::event::InternalEvent;
 use crate::twitch::state::TwitchService;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct AppState {
     pub twitch: TwitchService,
     pub kick: KickService,
-    pub notifications: NotificationRouter,
+    pub events: Arc<Mutex<Vec<InternalEvent>>>,
 }
 
 impl AppState {
@@ -14,7 +15,7 @@ impl AppState {
         Self {
             twitch: TwitchService::new(),
             kick: KickService::new().await,
-            notifications: NotificationRouter::new(),
+            events: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }

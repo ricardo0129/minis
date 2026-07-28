@@ -23,7 +23,7 @@ impl MessageHeaders {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StreamUpdate {
     pub broadcaster: Broadcaster,
     pub is_live: bool,
@@ -31,7 +31,7 @@ pub struct StreamUpdate {
     pub started_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Broadcaster {
     pub is_anonymous: bool,
     pub user_id: u64,

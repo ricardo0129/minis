@@ -1,6 +1,6 @@
 use crate::shared::appstate::AppState;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
-use crate::shared::event_router::NotificationRouter;
+use crate::shared::event_router::push_event;
 use crate::twitch;
 use crate::twitch::protocol::{Event, MessageHeaders, MessageType, StreamOnline};
 use crate::twitch::verifier;
@@ -31,7 +31,7 @@ fn handle_verification(body: String) -> Result<String, (StatusCode, String)> {
     Ok(payload.challenge)
 }
 
-async fn handle_notification(body: &str, notifications: &NotificationRouter) {
+fn handle_notification(body: &str, appstate: &mut AppState) {
     info!("Notification Message");
     let Json(event_wrapper): Json<Event<StreamOnline>> =
         Json::from_bytes(body.as_bytes()).expect("unable to parse notification");
@@ -42,11 +42,12 @@ async fn handle_notification(body: &str, notifications: &NotificationRouter) {
             event: event_wrapper.event,
         },
     };
-    notifications.route_event(event).await;
+    let event_ref = appstate.events.clone();
+    push_event(&mut event_ref.lock().unwrap(), event);
 }
 
 pub async fn event_sub(
-    State(appstate): State<AppState>,
+    State(mut appstate): State<AppState>,
     headers: HeaderMap,
     body: String,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -68,7 +69,7 @@ pub async fn event_sub(
             return handle_verification(body.clone());
         }
         MessageType::Notification => {
-            handle_notification(&body, &appstate.notifications).await;
+            handle_notification(&body, &mut appstate);
         }
         MessageType::Revocation => {
             info!("Revocation Message");

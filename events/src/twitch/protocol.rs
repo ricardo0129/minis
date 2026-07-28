@@ -46,7 +46,7 @@ impl MessageHeaders {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StreamOnline {
     pub id: String,
     pub broadcaster_user_id: String,

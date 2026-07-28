@@ -6,6 +6,9 @@ mod kick;
 mod shared;
 mod twitch;
 use crate::shared::app::build_router;
+use crate::shared::event_router::NotificationRouter;
+use crate::shared::event_router::pull_events;
+use tokio::time::{Duration, sleep};
 
 #[tokio::main]
 async fn main() {
@@ -19,6 +22,19 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
     let app_state = shared::appstate::AppState::new().await;
+    let events = app_state.events.clone();
+    tokio::spawn(async move {
+        let notification_router = NotificationRouter::new();
+        loop {
+            sleep(Duration::from_secs(1)).await;
+            info!("loop running");
+            let process_events = pull_events(&mut events.lock().unwrap());
+            for e in process_events {
+                info!("{:?}", e);
+                notification_router.route_event(e).await;
+            }
+        }
+    });
     let app = build_router(app_state);
 
     // run it

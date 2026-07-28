@@ -28,3 +28,12 @@ impl NotificationRouter {
         }
     }
 }
+
+pub fn push_event(event_queue: &mut Vec<InternalEvent>, event: InternalEvent) {
+    event_queue.push(event);
+}
+
+pub fn pull_events(event_queue: &mut Vec<InternalEvent>) -> Vec<InternalEvent> {
+    let num_events = event_queue.len();
+    event_queue.drain(0..num_events).collect()
+}
