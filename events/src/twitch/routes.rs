@@ -1,6 +1,5 @@
 use crate::shared::appstate::AppState;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
-use crate::shared::event_router::push_event;
 use crate::twitch;
 use crate::twitch::protocol::{Event, MessageHeaders, MessageType, StreamOnline};
 use crate::twitch::verifier;
@@ -43,7 +42,7 @@ fn handle_notification(body: &str, appstate: &mut AppState) {
         },
     };
     let event_ref = appstate.events.clone();
-    push_event(&mut event_ref.lock().unwrap(), event);
+    event_ref.lock().unwrap().push(event);
 }
 
 pub async fn event_sub(

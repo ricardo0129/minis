@@ -1,7 +1,6 @@
 use crate::kick::protocol::MessageHeaders;
 use crate::shared::appstate::AppState;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
-use crate::shared::event_router::push_event;
 use axum::Json;
 use axum::extract::State;
 use axum::http::HeaderMap;
@@ -48,7 +47,7 @@ pub async fn webhook(
             metadata: HashMap::new(),
             payload: EventKind::KickStreamUpdate { event: payload },
         };
-        push_event(&mut appstate.events.lock().unwrap(), internal_event);
+        appstate.events.lock().unwrap().push(internal_event);
     } else {
         return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
     }

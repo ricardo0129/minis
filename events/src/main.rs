@@ -6,8 +6,8 @@ mod kick;
 mod shared;
 mod twitch;
 use crate::shared::app::build_router;
+use crate::shared::event::InternalEvent;
 use crate::shared::event_router::NotificationRouter;
-use crate::shared::event_router::pull_events;
 use tokio::time::{Duration, sleep};
 
 #[tokio::main]
@@ -28,7 +28,7 @@ async fn main() {
         loop {
             sleep(Duration::from_secs(1)).await;
             info!("loop running");
-            let process_events = pull_events(&mut events.lock().unwrap());
+            let process_events: Vec<InternalEvent> = events.lock().unwrap().drain(..).collect();
             for e in process_events {
                 info!("{:?}", e);
                 notification_router.route_event(e).await;
