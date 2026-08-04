@@ -20,6 +20,11 @@ impl NotificationRouter {
             } => {
                 self.discord.post_notification(stream_online).await;
             }
+            EventKind::TwitchChannelUpdate {
+                event: channel_update,
+            } => {
+                self.discord.post_notification(channel_update).await;
+            }
             EventKind::KickStreamUpdate {
                 event: stream_update,
             } => {

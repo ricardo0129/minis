@@ -1,5 +1,5 @@
 use crate::kick::protocol::StreamUpdate;
-use crate::twitch::protocol::StreamOnline;
+use crate::twitch::protocol::{ChannelUpdate, StreamOnline};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -11,6 +11,7 @@ pub enum EventSource {
 #[derive(Clone, Debug)]
 pub enum EventKind {
     TwitchStreamOnline { event: StreamOnline },
+    TwitchChannelUpdate { event: ChannelUpdate },
     KickStreamUpdate { event: StreamUpdate },
 }
 

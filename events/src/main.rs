@@ -6,6 +6,7 @@ mod kick;
 mod shared;
 mod twitch;
 use crate::shared::app::build_router;
+use crate::shared::event::InternalEvent;
 use crate::shared::event_router::NotificationRouter;
 use tokio::sync::mpsc::channel;
 
@@ -25,7 +26,7 @@ async fn main() {
     tokio::spawn(async move {
         let notification_router = NotificationRouter::new();
         loop {
-            let event = receiver.recv().await.expect("Unable to read from channel");
+            let event: InternalEvent = receiver.recv().await.expect("Unable to read from channel");
             info!("Processing: {:?}", event);
             notification_router.route_event(event).await;
         }

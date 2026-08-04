@@ -66,6 +66,22 @@ impl IntoNotification for StreamOnline {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChannelUpdate {
+    pub broadcaster_user_id: String,
+    pub broadcaster_user_login: String,
+    pub broadcaster_user_name: String,
+    pub title: String,
+    pub category_id: String,
+    pub category_name: String,
+}
+
+impl IntoNotification for ChannelUpdate {
+    fn format_notification(&self) -> String {
+        format!("{} {}", self.title, self.category_name)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event<T> {
     pub event: T,

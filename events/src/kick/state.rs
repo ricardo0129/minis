@@ -10,7 +10,8 @@ pub struct KickService {
 impl KickService {
     pub async fn new() -> Self {
         let public_key: RsaPublicKey =
-            retrieve_public_key(format!("{}/public-key", constants::KICK_API)).await;
+            retrieve_public_key::<RsaPublicKey>(format!("{}/public-key", constants::KICK_API))
+                .await;
         Self { public_key }
     }
 }
