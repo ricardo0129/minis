@@ -1,6 +1,8 @@
 use crate::discord::state::DiscordNotifier;
 use crate::shared::event::{EventKind, InternalEvent};
 use crate::shared::notifier::Notifier;
+use tokio::sync::mpsc::Receiver;
+use tracing::info;
 
 #[derive(Clone)]
 pub struct NotificationRouter {
@@ -31,5 +33,18 @@ impl NotificationRouter {
                 self.discord.post_notification(stream_update).await;
             }
         }
+    }
+}
+
+pub const CHANNEL_QUEUE_SIZE: usize = 100;
+
+pub async fn route_loop(
+    notification_router: NotificationRouter,
+    mut receiver: Receiver<InternalEvent>,
+) {
+    loop {
+        let event: InternalEvent = receiver.recv().await.expect("Unable to read from channel");
+        info!("Processing: {:?}", event);
+        notification_router.route_event(event).await;
     }
 }
