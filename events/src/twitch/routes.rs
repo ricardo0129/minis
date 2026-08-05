@@ -1,7 +1,10 @@
 use crate::shared::appstate::AppState;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
 use crate::twitch;
-use crate::twitch::protocol::{ChannelUpdate, Event, MessageHeaders, MessageType, StreamOnline};
+use crate::twitch::protocol::{
+    ChannelUpdate, Event, MessageHeaders, MessageType, StreamOnline, SubscriptionType,
+    SubscriptionWrapper,
+};
 use crate::twitch::verifier;
 use std::collections::HashMap;
 
@@ -9,7 +12,6 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
-use serde_json::Value;
 use std::str::FromStr;
 use tracing::info;
 
@@ -33,26 +35,19 @@ fn handle_verification(body: String) -> Result<String, (StatusCode, String)> {
 
 async fn handle_notification(body: &str, appstate: &AppState) {
     info!("Notification Message");
-    let body_json: Value = serde_json::from_str(body).expect("unable to parse body");
+    let Json(subscription_wrapper): Json<SubscriptionWrapper> =
+        Json::from_bytes(body.as_bytes()).expect("unable to parse subscription type");
 
-    let payload = match body_json["subscription"]["type"].as_str().unwrap_or("") {
-        "stream.online" => {
+    let payload = match subscription_wrapper.subscription.subscription_type {
+        SubscriptionType::StreamOnlineType => {
             let Json(event_wrapper): Json<Event<StreamOnline>> =
                 Json::from_bytes(body.as_bytes()).expect("unable to parse notification");
-            EventKind::TwitchStreamOnline {
-                event: event_wrapper.event,
-            }
+            EventKind::TwitchStreamOnline(event_wrapper.event)
         }
-        "channel.update" => {
+        SubscriptionType::ChannelUpdateType => {
             let Json(event_wrapper): Json<Event<ChannelUpdate>> =
                 Json::from_bytes(body.as_bytes()).expect("unable to parse notification");
-            EventKind::TwitchChannelUpdate {
-                event: event_wrapper.event,
-            }
-        }
-        val => {
-            println!("Event Notification {}: Not Supported", val);
-            return;
+            EventKind::TwitchChannelUpdate(event_wrapper.event)
         }
     };
     let event = InternalEvent {

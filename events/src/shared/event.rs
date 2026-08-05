@@ -10,9 +10,9 @@ pub enum EventSource {
 
 #[derive(Clone, Debug)]
 pub enum EventKind {
-    TwitchStreamOnline { event: StreamOnline },
-    TwitchChannelUpdate { event: ChannelUpdate },
-    KickStreamUpdate { event: StreamUpdate },
+    TwitchStreamOnline(StreamOnline),
+    TwitchChannelUpdate(ChannelUpdate),
+    KickStreamUpdate(StreamUpdate),
 }
 
 #[derive(Clone, Debug)]

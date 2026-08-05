@@ -42,7 +42,7 @@ pub async fn webhook(
         let internal_event = InternalEvent {
             source: EventSource::Kick,
             metadata: HashMap::new(),
-            payload: EventKind::KickStreamUpdate { event: payload },
+            payload: EventKind::KickStreamUpdate(payload),
         };
         appstate.sender.send(internal_event).await.unwrap();
     } else {

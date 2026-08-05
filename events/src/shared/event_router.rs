@@ -17,21 +17,9 @@ impl NotificationRouter {
     }
     pub async fn route_event(&self, event: InternalEvent) {
         match event.payload {
-            EventKind::TwitchStreamOnline {
-                event: stream_online,
-            } => {
-                self.discord.post_notification(stream_online).await;
-            }
-            EventKind::TwitchChannelUpdate {
-                event: channel_update,
-            } => {
-                self.discord.post_notification(channel_update).await;
-            }
-            EventKind::KickStreamUpdate {
-                event: stream_update,
-            } => {
-                self.discord.post_notification(stream_update).await;
-            }
+            EventKind::TwitchStreamOnline(event) => self.discord.post_notification(event).await,
+            EventKind::TwitchChannelUpdate(event) => self.discord.post_notification(event).await,
+            EventKind::KickStreamUpdate(event) => self.discord.post_notification(event).await,
         }
     }
 }

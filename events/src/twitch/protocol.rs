@@ -66,7 +66,8 @@ impl IntoNotification for StreamOnline {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ChannelUpdate {
     pub broadcaster_user_id: String,
     pub broadcaster_user_login: String,
@@ -74,6 +75,25 @@ pub struct ChannelUpdate {
     pub title: String,
     pub category_id: String,
     pub category_name: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub enum SubscriptionType {
+    #[serde(rename = "stream.online")]
+    StreamOnlineType,
+    #[serde(rename = "channel.update")]
+    ChannelUpdateType,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct Subscription {
+    #[serde(rename = "type")]
+    pub subscription_type: SubscriptionType,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct SubscriptionWrapper {
+    pub subscription: Subscription,
 }
 
 impl IntoNotification for ChannelUpdate {
