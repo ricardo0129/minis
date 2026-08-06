@@ -8,6 +8,7 @@ use crate::twitch::protocol::{
 use crate::twitch::verifier;
 use std::collections::HashMap;
 
+use crate::shared::error::RouteError;
 use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
@@ -62,23 +63,20 @@ pub async fn event_sub(
     State(appstate): State<AppState>,
     headers: HeaderMap,
     body: String,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+) -> Result<impl IntoResponse, RouteError> {
     if !verify_signature(&headers, &appstate.twitch.twitch_secret, &body).await {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            "Unable to validate request".to_string(),
-        ));
+        return Err(RouteError::InvalidSignature);
     }
 
     let message_headers = MessageHeaders::from_headers(&headers);
 
     let Ok(message_type) = MessageType::from_str(&message_headers.message_type) else {
-        return Err((StatusCode::BAD_REQUEST, "Invalid Message Type".to_string()));
+        return Err(RouteError::InvalidMessageType);
     };
 
     match message_type {
         MessageType::Verification => {
-            return handle_verification(body.clone());
+            return handle_verification(body.clone()).map_err(|_| RouteError::InvalidSignature);
         }
         MessageType::Notification => {
             handle_notification(&body, &appstate).await;

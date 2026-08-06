@@ -1,9 +1,10 @@
-use crate::kick::protocol::MessageHeaders;
+use crate::kick::protocol::{MessageHeaders, MessageType};
 use crate::shared::appstate::AppState;
+use crate::shared::error::RouteError;
 use crate::shared::event::{EventKind, EventSource, InternalEvent};
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::HeaderMap;
 use axum::response::IntoResponse;
 use base64::prelude::*;
 use rsa::RsaPublicKey;
@@ -29,24 +30,21 @@ pub async fn webhook(
     State(appstate): State<AppState>,
     headers: HeaderMap,
     body: String,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+) -> Result<impl IntoResponse, RouteError> {
     let message_headers = MessageHeaders::from_headers(&headers);
     if !verify_signature(&appstate.kick.public_key, &message_headers, &body) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            "Unable to verify request".to_string(),
-        ));
+        return Err(RouteError::InvalidSignature);
     }
-    let Json(payload) = Json::from_bytes(body.as_bytes()).expect("bad Body");
-    if message_headers.message_type == "livestream.status.updated" {
-        let internal_event = InternalEvent {
-            source: EventSource::Kick,
-            metadata: HashMap::new(),
-            payload: EventKind::KickStreamUpdate(payload),
-        };
-        appstate.sender.send(internal_event).await.unwrap();
-    } else {
-        return Err((StatusCode::BAD_REQUEST, "Bad Request".to_string()));
+    let Json(payload) = Json::from_bytes(body.as_bytes()).map_err(|_| RouteError::BadRequest)?;
+    match message_headers.message_type {
+        MessageType::StreamUpdate => {
+            let internal_event = InternalEvent {
+                source: EventSource::Kick,
+                metadata: HashMap::new(),
+                payload: EventKind::KickStreamUpdate(payload),
+            };
+            appstate.sender.send(internal_event).await.unwrap();
+        }
     }
     Ok("success".to_string())
 }

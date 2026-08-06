@@ -4,12 +4,41 @@ use axum::http::HeaderMap;
 
 use crate::shared::notifier::IntoNotification;
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
+
+#[derive(Debug)]
+pub enum KickError {
+    InvalidMessageType,
+}
+
+impl fmt::Display for KickError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            KickError::InvalidMessageType => write!(f, "Invalid Message Type"),
+        }
+    }
+}
+
+pub enum MessageType {
+    StreamUpdate,
+}
+
+impl FromStr for MessageType {
+    type Err = KickError;
+    fn from_str(a: &str) -> Result<Self, KickError> {
+        match a {
+            "livestream.status.updated" => Ok(MessageType::StreamUpdate),
+            _ => Err(KickError::InvalidMessageType),
+        }
+    }
+}
 
 pub struct MessageHeaders {
     pub message_id: String,
     pub message_timestamp: String,
     pub message_signature: String,
-    pub message_type: String,
+    pub message_type: MessageType,
 }
 
 impl MessageHeaders {
@@ -18,7 +47,10 @@ impl MessageHeaders {
             message_id: header_to_string(&headers[constants::KICK_MESSAGE_ID]),
             message_timestamp: header_to_string(&headers[constants::KICK_MESSAGE_TIMESTAMP]),
             message_signature: header_to_string(&headers[constants::KICK_MESSAGE_SIGNATURE]),
-            message_type: header_to_string(&headers[constants::KICK_MESSAGE_TYPE]),
+            message_type: MessageType::from_str(
+                headers[constants::KICK_MESSAGE_TYPE].to_str().unwrap(),
+            )
+            .unwrap(),
         }
     }
 }
