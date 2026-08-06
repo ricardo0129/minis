@@ -31,8 +31,15 @@ pub async fn route_loop(
     mut receiver: Receiver<InternalEvent>,
 ) {
     loop {
-        let event: InternalEvent = receiver.recv().await.expect("Unable to read from channel");
-        info!("Processing: {:?}", event);
-        notification_router.route_event(event).await;
+        match receiver.recv().await {
+            Some(event) => {
+                info!("Processing: {:?}", event);
+                notification_router.route_event(event).await;
+            }
+            None => {
+                info!("Notification Channel Closed");
+                break;
+            }
+        }
     }
 }

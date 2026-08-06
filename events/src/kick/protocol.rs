@@ -2,23 +2,10 @@ use crate::kick::constants;
 use crate::shared::utils::header_to_string;
 use axum::http::HeaderMap;
 
+use crate::kick::error::KickError;
 use crate::shared::notifier::IntoNotification;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use std::str::FromStr;
-
-#[derive(Debug)]
-pub enum KickError {
-    InvalidMessageType,
-}
-
-impl fmt::Display for KickError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            KickError::InvalidMessageType => write!(f, "Invalid Message Type"),
-        }
-    }
-}
 
 pub enum MessageType {
     StreamUpdate,
