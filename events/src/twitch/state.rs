@@ -6,7 +6,8 @@ pub struct TwitchService {
 impl TwitchService {
     pub fn new() -> Self {
         Self {
-            twitch_secret: std::env::var("TWITCH_SECRET").expect("Missing Twitch Secret"),
+            twitch_secret: std::env::var("TWITCH_SECRET")
+                .expect("Missing Twitch Secret: TWITCH_SECRET"),
         }
     }
 }

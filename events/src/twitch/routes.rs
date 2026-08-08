@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use crate::shared::error::RouteError;
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::HeaderMap;
 use axum::response::IntoResponse;
 use std::str::FromStr;
 use tracing::info;
@@ -27,14 +27,10 @@ async fn verify_signature(
     verifier::verify_twitch_request(&headers, twitch_secret, body)
 }
 
-fn handle_verification(body: String) -> Result<String, (StatusCode, String)> {
+fn handle_verification(body: String) -> Result<String, RouteError> {
     info!("Verification Message");
-    let Json(payload): Json<ChallengeBody> = Json::from_bytes(body.as_bytes()).map_err(|_| {
-        (
-            StatusCode::BAD_REQUEST,
-            "Unable to Parse Challenge Body".to_string(),
-        )
-    })?;
+    let Json(payload): Json<ChallengeBody> =
+        Json::from_bytes(body.as_bytes()).map_err(|_| RouteError::InvalidSignature)?;
     Ok(payload.challenge)
 }
 
@@ -82,7 +78,7 @@ pub async fn event_sub(
 
     match message_type {
         MessageType::Verification => {
-            return handle_verification(body.clone()).map_err(|_| RouteError::InvalidSignature);
+            return handle_verification(body.clone());
         }
         MessageType::Notification => {
             handle_notification(&body, &appstate)

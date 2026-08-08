@@ -29,16 +29,16 @@ pub struct MessageHeaders {
 }
 
 impl MessageHeaders {
-    pub fn from_headers(headers: &HeaderMap) -> Self {
-        Self {
+    pub fn from_headers(headers: &HeaderMap) -> Result<Self, KickError> {
+        Ok(Self {
             message_id: header_to_string(&headers[constants::KICK_MESSAGE_ID]),
             message_timestamp: header_to_string(&headers[constants::KICK_MESSAGE_TIMESTAMP]),
             message_signature: header_to_string(&headers[constants::KICK_MESSAGE_SIGNATURE]),
             message_type: MessageType::from_str(
                 headers[constants::KICK_MESSAGE_TYPE].to_str().unwrap(),
             )
-            .unwrap(),
-        }
+            .map_err(|_| KickError::InvalidMessageType)?,
+        })
     }
 }
 

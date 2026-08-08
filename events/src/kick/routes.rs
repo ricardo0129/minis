@@ -37,7 +37,8 @@ pub async fn webhook(
     headers: HeaderMap,
     body: String,
 ) -> Result<impl IntoResponse, RouteError> {
-    let message_headers = MessageHeaders::from_headers(&headers);
+    let message_headers =
+        MessageHeaders::from_headers(&headers).map_err(|_| RouteError::InvalidMessageType)?;
     match verify_signature(&appstate.kick.public_key, &message_headers, &body) {
         Ok(true) => {}
         _ => return Err(RouteError::InvalidSignature),

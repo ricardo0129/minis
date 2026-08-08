@@ -14,8 +14,8 @@ impl DiscordNotifier {
     pub fn new() -> Self {
         Self {
             client: reqwest::Client::new(),
-            token: std::env::var("DISCORD_TOKEN").expect("Missing Discord Token"),
-            channel_id: std::env::var("CHANNEL_ID").expect("Missing Channel Id"),
+            token: std::env::var("DISCORD_TOKEN").expect("Missing Discord Token: DISCORD_TOKEN"),
+            channel_id: std::env::var("CHANNEL_ID").expect("Missing Channel Id: CHANNEL_ID"),
         }
     }
 }
