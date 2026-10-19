@@ -1,8 +1,8 @@
 use crate::kick::error::KickError;
-use crate::kick::protocol::{MessageHeaders, MessageType};
+use crate::kick::protocol::{MessageHeaders, MessageType, StreamUpdate};
 use crate::shared::appstate::AppState;
 use crate::shared::error::RouteError;
-use crate::shared::event::{EventKind, EventSource, InternalEvent};
+use crate::shared::event::{ChannelInfo, EventPayload, EventSource, InternalEvent};
 use axum::Json;
 use axum::extract::State;
 use axum::http::HeaderMap;
@@ -12,7 +12,6 @@ use rsa::RsaPublicKey;
 use rsa::pkcs1v15::{Signature, VerifyingKey};
 use rsa::sha2::Sha256;
 use rsa::signature::Verifier;
-use std::collections::HashMap;
 
 pub fn verify_signature(
     public_key: &RsaPublicKey,
@@ -43,15 +42,19 @@ pub async fn webhook(
         Ok(true) => {}
         _ => return Err(RouteError::InvalidSignature),
     }
-    let Json(payload) = Json::from_bytes(body.as_bytes()).map_err(|_| RouteError::BadRequest)?;
+    let Json(notification): Json<StreamUpdate> =
+        Json::from_bytes(body.as_bytes()).map_err(|_| RouteError::BadRequest)?;
     match message_headers.message_type {
         MessageType::StreamUpdate => {
-            let internal_event = InternalEvent {
-                source: EventSource::Kick,
-                metadata: HashMap::new(),
-                payload: EventKind::KickStreamUpdate(payload),
+            let event = InternalEvent {
+                payload: EventPayload::Online {
+                    source: EventSource::Kick,
+                    channel_info: ChannelInfo {
+                        user_name: notification.broadcaster.username,
+                    },
+                },
             };
-            appstate.sender.send(internal_event).await.unwrap();
+            appstate.sender.send(event).await.unwrap();
         }
     }
     Ok("success".to_string())

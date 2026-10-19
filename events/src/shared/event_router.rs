@@ -1,5 +1,5 @@
 use crate::discord::state::DiscordNotifier;
-use crate::shared::event::{EventKind, InternalEvent};
+use crate::shared::event::InternalEvent;
 use crate::shared::notifier::Notifier;
 use tokio::sync::mpsc::Receiver;
 use tracing::info;
@@ -16,11 +16,7 @@ impl NotificationRouter {
         }
     }
     pub async fn route_event(&self, event: InternalEvent) {
-        match event.payload {
-            EventKind::TwitchStreamOnline(event) => self.discord.post_notification(event).await,
-            EventKind::TwitchChannelUpdate(event) => self.discord.post_notification(event).await,
-            EventKind::KickStreamUpdate(event) => self.discord.post_notification(event).await,
-        }
+        self.discord.post_notification(event.payload).await;
     }
 }
 

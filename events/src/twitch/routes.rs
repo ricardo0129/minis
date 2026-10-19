@@ -1,13 +1,9 @@
 use crate::shared::appstate::AppState;
-use crate::shared::event::{EventKind, EventSource, InternalEvent};
+use crate::shared::event::{ChannelInfo, EventPayload, EventSource, InternalEvent, TitleInfo};
 use crate::twitch;
 use crate::twitch::error::TwitchError;
-use crate::twitch::protocol::{
-    ChallengeBody, ChannelUpdate, Event, MessageHeaders, MessageType, StreamOnline,
-    SubscriptionType, SubscriptionWrapper,
-};
+use crate::twitch::protocol::{ChallengeBody, Event, MessageHeaders, MessageType, Notification};
 use crate::twitch::verifier;
-use std::collections::HashMap;
 
 use crate::shared::error::RouteError;
 use axum::Json;
@@ -36,26 +32,43 @@ fn handle_verification(body: String) -> Result<String, RouteError> {
 
 async fn handle_notification(body: &str, appstate: &AppState) -> Result<(), TwitchError> {
     info!("Notification Message");
-    let Json(subscription_wrapper): Json<SubscriptionWrapper> =
+    let Json(notification): Json<Notification> =
         Json::from_bytes(body.as_bytes()).map_err(|_| TwitchError::EventParsing)?;
 
-    let payload = match subscription_wrapper.subscription.subscription_type {
-        SubscriptionType::StreamOnlineType => {
-            let Json(event_wrapper): Json<Event<StreamOnline>> =
-                Json::from_bytes(body.as_bytes()).map_err(|_| TwitchError::EventParsing)?;
-            EventKind::TwitchStreamOnline(event_wrapper.event)
-        }
-        SubscriptionType::ChannelUpdateType => {
-            let Json(event_wrapper): Json<Event<ChannelUpdate>> =
-                Json::from_bytes(body.as_bytes()).map_err(|_| TwitchError::EventParsing)?;
-            EventKind::TwitchChannelUpdate(event_wrapper.event)
-        }
+    let payload = match notification.event {
+        Event::StreamOnline {
+            broadcaster_user_name,
+            started_at: _,
+        } => EventPayload::Online {
+            source: EventSource::Twitch,
+            channel_info: ChannelInfo {
+                user_name: broadcaster_user_name,
+            },
+        },
+        Event::StreamOffline {
+            broadcaster_user_name,
+        } => EventPayload::Offline {
+            source: EventSource::Twitch,
+            channel_info: ChannelInfo {
+                user_name: broadcaster_user_name,
+            },
+        },
+        Event::ChannelUpdate {
+            broadcaster_user_name,
+            title,
+            category_name,
+        } => EventPayload::Update {
+            source: EventSource::Twitch,
+            channel_info: ChannelInfo {
+                user_name: broadcaster_user_name,
+            },
+            title_info: TitleInfo {
+                category_name,
+                title,
+            },
+        },
     };
-    let event = InternalEvent {
-        source: EventSource::Twitch,
-        metadata: HashMap::new(),
-        payload,
-    };
+    let event = InternalEvent { payload };
     appstate.sender.send(event).await.unwrap();
     Ok(())
 }

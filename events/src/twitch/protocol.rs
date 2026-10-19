@@ -1,4 +1,3 @@
-use crate::shared::notifier::IntoNotification;
 use crate::shared::utils::header_to_string;
 use crate::twitch::constants;
 use axum::http::header::HeaderMap;
@@ -46,63 +45,25 @@ impl MessageHeaders {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct StreamOnline {
-    pub id: String,
-    pub broadcaster_user_id: String,
-    pub broadcaster_user_login: String,
-    pub broadcaster_user_name: String,
-    #[serde(rename = "type")]
-    pub notification_type: String,
-    pub started_at: String,
-}
-
-impl IntoNotification for StreamOnline {
-    fn format_notification(&self) -> String {
-        format!(
-            "{} Went Live! https://twitch.com/{}",
-            self.broadcaster_user_name, self.broadcaster_user_name
-        )
-    }
-}
-
-#[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize)]
-pub struct ChannelUpdate {
-    pub broadcaster_user_id: String,
-    pub broadcaster_user_login: String,
-    pub broadcaster_user_name: String,
-    pub title: String,
-    pub category_id: String,
-    pub category_name: String,
+#[serde(untagged)]
+pub enum Event {
+    StreamOnline {
+        #[allow(dead_code)]
+        started_at: String,
+        broadcaster_user_name: String,
+    },
+    ChannelUpdate {
+        broadcaster_user_name: String,
+        title: String,
+        category_name: String,
+    },
+    StreamOffline {
+        broadcaster_user_name: String,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub enum SubscriptionType {
-    #[serde(rename = "stream.online")]
-    StreamOnlineType,
-    #[serde(rename = "channel.update")]
-    ChannelUpdateType,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct Subscription {
-    #[serde(rename = "type")]
-    pub subscription_type: SubscriptionType,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct SubscriptionWrapper {
-    pub subscription: Subscription,
-}
-
-impl IntoNotification for ChannelUpdate {
-    fn format_notification(&self) -> String {
-        format!("{} {}", self.title, self.category_name)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Event<T> {
-    pub event: T,
+pub struct Notification {
+    pub event: Event,
 }
