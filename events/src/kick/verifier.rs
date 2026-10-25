@@ -7,11 +7,11 @@ use rsa::sha2::Sha256;
 use rsa::signature::Verifier;
 
 pub trait VerifySignature {
-    fn verify_signature(&self, headers: &MessageHeaders, body: &str) -> Result<bool, KickError>;
+    fn verify(&self, headers: &MessageHeaders, body: &str) -> Result<bool, KickError>;
 }
 
 impl VerifySignature for RsaPublicKey {
-    fn verify_signature(&self, headers: &MessageHeaders, body: &str) -> Result<bool, KickError> {
+    fn verify(&self, headers: &MessageHeaders, body: &str) -> Result<bool, KickError> {
         let decoded_signature = BASE64_STANDARD
             .decode(&headers.message_signature)
             .map_err(|_| KickError::FailedValidation)?;

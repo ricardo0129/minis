@@ -101,43 +101,38 @@ pub async fn event_sub<T, U: VerifyHmac>(
 mod test {
 
     use super::*;
-    use crate::kick;
-    use crate::kick::error::KickError;
     use crate::kick::state::KickService;
-    use crate::kick::verifier::VerifySignature;
-    use crate::shared::app::build_router;
     use crate::twitch::state::TwitchService;
-    use axum::Router;
+    use axum::{Router, routing};
     use tokio::sync::mpsc::channel;
 
+    use crate::twitch::constants::*;
     use axum::{
         body::Body,
         http::{Request, StatusCode},
     };
     use tower::ServiceExt;
+    use tower_http::trace::TraceLayer;
+
+    const TEST_ENDPOINT: &str = "/twitch/eventsub";
 
     #[derive(Clone)]
-    struct MockTwitchKey;
-    impl VerifySignature for MockTwitchKey {
-        fn verify_signature(
-            &self,
-            _headers: &kick::protocol::MessageHeaders,
-            _body: &str,
-        ) -> Result<bool, KickError> {
-            Ok(true)
-        }
+    struct MockTwitchKey {
+        key: String,
     }
     impl VerifyHmac for MockTwitchKey {
-        fn verify(&self, _headers: &MessageHeaders, _body: &str) -> Result<bool, TwitchError> {
-            Ok(true)
+        fn verify(&self, _headers: &MessageHeaders, body: &str) -> Result<bool, TwitchError> {
+            Ok(self.key == body)
         }
     }
     fn test_app() -> Router {
         let kick_service = KickService {
-            public_key: MockTwitchKey,
+            public_key: "123".to_string(),
         };
         let twitch_service = TwitchService {
-            hmac_key: MockTwitchKey,
+            hmac_key: MockTwitchKey {
+                key: "mock_key".into(),
+            },
         };
 
         let (sender, _) = channel(1);
@@ -146,20 +141,36 @@ mod test {
             twitch: twitch_service,
             sender,
         };
-        build_router(app_state)
+        let router = Router::new()
+            .route(TEST_ENDPOINT, routing::post(event_sub))
+            .layer(TraceLayer::new_for_http())
+            .with_state(app_state);
+        router
     }
 
     #[tokio::test]
-    async fn test_event_sub_bad_request() {
+    #[should_panic]
+    async fn test_event_sub_missing_headers() {
+        let app = test_app();
+        app.oneshot(Request::post(TEST_ENDPOINT).body(Body::from("")).unwrap())
+            .await
+            .unwrap();
+    }
+    #[tokio::test]
+    async fn test_event_sub_valid_revocation_request() {
         let app = test_app();
         let response = app
             .oneshot(
-                Request::post("/twitch/event_sub")
-                    .body(Body::from(""))
+                Request::post(TEST_ENDPOINT)
+                    .header(TWITCH_MESSAGE_ID, "1")
+                    .header(TWITCH_MESSAGE_TIMESTAMP, "2026")
+                    .header(TWITCH_MESSAGE_SIGNATURE, "sha256:123")
+                    .header(TWITCH_MESSAGE_TYPE, "revocation")
+                    .body(Body::from("mock_key"))
                     .unwrap(),
             )
             .await
             .unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert_eq!(response.status(), StatusCode::OK);
     }
 }

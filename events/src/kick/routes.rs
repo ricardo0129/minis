@@ -16,11 +16,7 @@ pub async fn webhook<T: VerifySignature, U: VerifyHmac>(
 ) -> Result<impl IntoResponse, RouteError> {
     let message_headers =
         MessageHeaders::from_headers(&headers).map_err(|_| RouteError::InvalidMessageType)?;
-    match appstate
-        .kick
-        .public_key
-        .verify_signature(&message_headers, &body)
-    {
+    match appstate.kick.public_key.verify(&message_headers, &body) {
         Ok(true) => {}
         _ => return Err(RouteError::InvalidSignature),
     }
