@@ -1,20 +1,27 @@
+use crate::kick::api::FromPublicKeyPem;
 use crate::kick::state::KickService;
+use crate::kick::verifier::VerifySignature;
 use crate::shared::event::InternalEvent;
 use crate::twitch::state::TwitchService;
+use crate::twitch::verifier::VerifyHmac;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
-pub struct AppState {
-    pub twitch: TwitchService,
-    pub kick: KickService,
+pub struct AppState<T, U: VerifyHmac> {
+    pub twitch: TwitchService<U>,
+    pub kick: KickService<T>,
     pub sender: Sender<InternalEvent>,
 }
 
-impl AppState {
-    pub async fn new(event_channel: Sender<InternalEvent>) -> Self {
+impl<T: VerifySignature + FromPublicKeyPem, U: VerifyHmac> AppState<T, U> {
+    pub async fn new(
+        event_channel: Sender<InternalEvent>,
+        key: T,
+        twitch_service: TwitchService<U>,
+    ) -> Self {
         Self {
-            twitch: TwitchService::new(),
-            kick: KickService::new().await,
+            twitch: twitch_service,
+            kick: KickService::new(key).await,
             sender: event_channel,
         }
     }

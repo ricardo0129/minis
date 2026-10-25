@@ -1,13 +1,12 @@
+use crate::twitch::verifier::VerifyHmac;
+
 #[derive(Clone)]
-pub struct TwitchService {
-    pub twitch_secret: String,
+pub struct TwitchService<T: VerifyHmac> {
+    pub hmac_key: T,
 }
 
-impl TwitchService {
-    pub fn new() -> Self {
-        Self {
-            twitch_secret: std::env::var("TWITCH_SECRET")
-                .expect("Missing Twitch Secret: TWITCH_SECRET"),
-        }
+impl<T: VerifyHmac> TwitchService<T> {
+    pub fn new(hmac_key: T) -> Self {
+        Self { hmac_key }
     }
 }

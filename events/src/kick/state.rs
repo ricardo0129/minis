@@ -1,17 +1,13 @@
-use crate::kick::api::retrieve_public_key;
-use crate::kick::constants;
-use rsa::RsaPublicKey;
+use crate::kick::api::FromPublicKeyPem;
+use crate::kick::verifier::VerifySignature;
 
 #[derive(Clone)]
-pub struct KickService {
-    pub public_key: RsaPublicKey,
+pub struct KickService<T> {
+    pub public_key: T,
 }
 
-impl KickService {
-    pub async fn new() -> Self {
-        let public_key: RsaPublicKey =
-            retrieve_public_key::<RsaPublicKey>(format!("{}/public-key", constants::KICK_API))
-                .await;
-        Self { public_key }
+impl<T: VerifySignature + FromPublicKeyPem> KickService<T> {
+    pub async fn new(key: T) -> Self {
+        Self { public_key: key }
     }
 }
