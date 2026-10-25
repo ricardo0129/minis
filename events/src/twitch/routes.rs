@@ -19,7 +19,7 @@ fn handle_verification(body: String) -> Result<String, RouteError> {
     Ok(payload.challenge)
 }
 
-async fn handle_notification<T, U: VerifyHmac>(
+async fn handle_notification<T, U>(
     body: &str,
     appstate: &AppState<T, U>,
 ) -> Result<(), TwitchError> {
@@ -95,4 +95,71 @@ pub async fn event_sub<T, U: VerifyHmac>(
         }
     }
     Ok("success".to_string())
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use crate::kick;
+    use crate::kick::error::KickError;
+    use crate::kick::state::KickService;
+    use crate::kick::verifier::VerifySignature;
+    use crate::shared::app::build_router;
+    use crate::twitch::state::TwitchService;
+    use axum::Router;
+    use tokio::sync::mpsc::channel;
+
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt;
+
+    #[derive(Clone)]
+    struct MockTwitchKey;
+    impl VerifySignature for MockTwitchKey {
+        fn verify_signature(
+            &self,
+            _headers: &kick::protocol::MessageHeaders,
+            _body: &str,
+        ) -> Result<bool, KickError> {
+            Ok(true)
+        }
+    }
+    impl VerifyHmac for MockTwitchKey {
+        fn verify(&self, _headers: &MessageHeaders, _body: &str) -> Result<bool, TwitchError> {
+            Ok(true)
+        }
+    }
+    fn test_app() -> Router {
+        let kick_service = KickService {
+            public_key: MockTwitchKey,
+        };
+        let twitch_service = TwitchService {
+            hmac_key: MockTwitchKey,
+        };
+
+        let (sender, _) = channel(1);
+        let app_state = AppState {
+            kick: kick_service,
+            twitch: twitch_service,
+            sender,
+        };
+        build_router(app_state)
+    }
+
+    #[tokio::test]
+    async fn test_event_sub_bad_request() {
+        let app = test_app();
+        let response = app
+            .oneshot(
+                Request::post("/twitch/event_sub")
+                    .body(Body::from(""))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
 }

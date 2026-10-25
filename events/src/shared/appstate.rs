@@ -7,7 +7,7 @@ use crate::twitch::verifier::VerifyHmac;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
-pub struct AppState<T, U: VerifyHmac> {
+pub struct AppState<T, U> {
     pub twitch: TwitchService<U>,
     pub kick: KickService<T>,
     pub sender: Sender<InternalEvent>,
@@ -16,12 +16,12 @@ pub struct AppState<T, U: VerifyHmac> {
 impl<T: VerifySignature + FromPublicKeyPem, U: VerifyHmac> AppState<T, U> {
     pub async fn new(
         event_channel: Sender<InternalEvent>,
-        key: T,
+        kick_service: KickService<T>,
         twitch_service: TwitchService<U>,
     ) -> Self {
         Self {
             twitch: twitch_service,
-            kick: KickService::new(key).await,
+            kick: kick_service,
             sender: event_channel,
         }
     }
